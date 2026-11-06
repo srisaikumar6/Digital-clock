@@ -2,6 +2,8 @@
 
 A minimal live clock with a moving analog dial, local date, and a 12/24-hour time switch.
 
+<img src="screenshot.png" alt="Still Digital Clock website preview" width="720">
+
 ## Features
 
 - Live digital time and animated analog dial
