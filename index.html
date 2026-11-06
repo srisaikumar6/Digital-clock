@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101515">
+    <meta name="description" content="A beautiful live clock showing your local time and date.">
+    <title>Still — Digital Clock</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #101515;
+        color: #edf2e8;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        --mint: #c1efc9;
+        --muted: #8d9990;
+      }
+      * { box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 32px 18px;
+        overflow: hidden;
+        background:
+          radial-gradient(ellipse at 50% 47%, #283b31 0, #18231f 25%, transparent 62%),
+          radial-gradient(ellipse at 85% 15%, #27302a 0, transparent 34%),
+          #101515;
+      }
+      .clock { width: min(100%, 630px); text-align: center; }
+      .topline { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; }
+      .brand { display: flex; align-items: center; gap: 10px; color: #d3ded5; font-size: .9rem; font-weight: 700; letter-spacing: .035em; }
+      .brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid #516457; border-radius: 12px; color: var(--mint); font-size: 1rem; }
+      .local { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .76rem; letter-spacing: .04em; }
+      .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 12px #c1efc988; }
+      .dial-wrap { display: grid; place-items: center; margin-bottom: 39px; }
+      .dial {
+        position: relative;
+        width: clamp(190px, 52vw, 270px);
+        aspect-ratio: 1;
+        border: 1px solid #ffffff13;
+        border-radius: 50%;
+        background: radial-gradient(circle at 50% 45%, #25352c 0, #1b2822 70%, #18211d 100%);
+        box-shadow: 0 0 0 12px #ffffff04, 0 25px 65px #0005, inset 0 2px 15px #ffffff08;
+      }
+      .tick { position: absolute; inset: 9px; transform: rotate(var(--rotation)); }
+      .tick::before { content: ""; position: absolute; top: 0; left: 50%; width: 2px; height: 7px; border-radius: 4px; background: #91a19766; transform: translateX(-50%); }
+      .tick.major::before { width: 3px; height: 12px; background: #c0d0c177; }
+      .hand { position: absolute; z-index: 1; bottom: 50%; left: 50%; border-radius: 10px; transform-origin: 50% 100%; }
+      .hour-hand { width: 5px; height: 28%; background: #d6e5d8; }
+      .minute-hand { width: 3px; height: 38%; background: var(--mint); }
+      .second-hand { width: 1px; height: 41%; background: #e69b79; }
+      .pin { position: absolute; z-index: 2; top: 50%; left: 50%; width: 12px; height: 12px; border: 3px solid #1e2d25; border-radius: 50%; background: var(--mint); transform: translate(-50%, -50%); }
+      .eyebrow { margin: 0 0 12px; color: #a8b7ab; font-size: .76rem; font-weight: 650; letter-spacing: .17em; text-transform: uppercase; }
+      .time { margin: 0; color: #f0f3eb; font-size: clamp(3.2rem, 13vw, 6.4rem); font-weight: 350; letter-spacing: -.075em; font-variant-numeric: tabular-nums; line-height: 1; }
+      .time .seconds { color: var(--mint); }
+      .date { margin: 17px 0 0; color: #9eaca1; font-size: 1rem; }
+      .controls { display: flex; justify-content: center; margin-top: 32px; }
+      .toggle { min-height: 41px; padding: 0 15px; border: 1px solid #ffffff1a; border-radius: 13px; color: #bdc9be; background: #ffffff08; font: inherit; font-size: .78rem; font-weight: 650; cursor: pointer; transition: background .16s ease, border-color .16s ease; }
+      .toggle:hover { border-color: #c1efc955; background: #ffffff10; }
+      .toggle:focus-visible { outline: 3px solid #c1efc955; outline-offset: 3px; }
+      .footer { margin-top: 55px; color: #758279; font-size: .72rem; letter-spacing: .02em; }
+      @media (max-width: 460px) {
+        .topline { margin-bottom: 31px; }
+        .dial-wrap { margin-bottom: 34px; }
+        .footer { margin-top: 42px; }
+      }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+    </style>
+  </head>
+  <body>
+    <main class="clock">
+      <header class="topline">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">◷</span> Still / local time</div>
+        <div class="local"><span class="live-dot" aria-hidden="true"></span> LIVE</div>
+      </header>
+      <div class="dial-wrap" aria-hidden="true">
+        <div class="dial" id="dial">
+          <div class="hand hour-hand" id="hour-hand"></div>
+          <div class="hand minute-hand" id="minute-hand"></div>
+          <div class="hand second-hand" id="second-hand"></div>
+          <div class="pin"></div>
+        </div>
+      </div>
+      <p class="eyebrow">Your time, right now</p>
+      <p class="time" id="time" role="timer" aria-live="off"></p>
+      <p class="date" id="date"></p>
+      <div class="controls">
+        <button class="toggle" id="format" type="button" aria-label="Switch to 24-hour time">24-hour time</button>
+      </div>
+      <footer class="footer">A quiet moment, wherever you are.</footer>
+    </main>
+    <script>
+      const timeDisplay = document.querySelector("#time");
+      const dateDisplay = document.querySelector("#date");
+      const formatButton = document.querySelector("#format");
+      let use24Hour = false;
+
+      for (let index = 0; index < 60; index++) {
+        const tick = document.createElement("span");
+        tick.className = `tick${index % 5 === 0 ? " major" : ""}`;
+        tick.style.setProperty("--rotation", `${index * 6}deg`);
+        document.querySelector("#dial").append(tick);
+      }
+
+      function updateClock() {
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const seconds = now.getSeconds();
+        const timeParts = new Intl.DateTimeFormat(undefined, {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: !use24Hour
+        }).formatToParts(now);
+        timeDisplay.replaceChildren();
+        for (const part of timeParts) {
+          if (part.type === "second") {
+            const seconds = document.createElement("span");
+            seconds.className = "seconds";
+            seconds.textContent = part.value;
+            timeDisplay.append(seconds);
+          } else {
+            timeDisplay.append(document.createTextNode(part.value));
+          }
+        }
+        dateDisplay.textContent = new Intl.DateTimeFormat(undefined, {
+          weekday: "long", month: "long", day: "numeric", year: "numeric"
+        }).format(now);
+        document.querySelector("#hour-hand").style.transform = `rotate(${(hours % 12) * 30 + minutes / 2}deg)`;
+        document.querySelector("#minute-hand").style.transform = `rotate(${minutes * 6 + seconds / 10}deg)`;
+        document.querySelector("#second-hand").style.transform = `rotate(${seconds * 6}deg)`;
+      }
+
+      formatButton.addEventListener("click", () => {
+        use24Hour = !use24Hour;
+        formatButton.textContent = use24Hour ? "12-hour time" : "24-hour time";
+        formatButton.setAttribute("aria-label", use24Hour ? "Switch to 12-hour time" : "Switch to 24-hour time");
+        updateClock();
+      });
+
+      updateClock();
+      setInterval(updateClock, 1000);
+    </script>
+  </body>
+</html>
